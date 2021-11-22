@@ -52,6 +52,18 @@ def runge_kutta4(system, a, b, h, y0):
     return result
 
 
+def adams3(system, a, b, h, y0):
+    xrange = np.arange(a, b, h)
+    result = np.zeros((len(y0), len(xrange)))
+    result[:, 0:3] = runge_kutta4(system, a, a + 3 * h, h, y0)[:, 0:3]
+    for i in range(3, len(xrange)):
+        prev1 = system(xrange[i - 1], result[:, i - 1])[:, 0]
+        prev2 = system(xrange[i - 2], result[:, i - 2])[:, 0]
+        prev3 = system(xrange[i - 3], result[:, i - 3])[:, 0]
+        result[:, i] = result[:, i - 1] + h * ((23/12) * prev1 - (16/12) * prev2 + (5/12) * prev3)
+    return result
+
+
 def adams4(system, a, b, h, y0):
     xrange = np.arange(a, b, h)
     result = np.zeros((len(y0), len(xrange)))
@@ -68,13 +80,13 @@ def adams4(system, a, b, h, y0):
 def main1():
     x0 = 0
     xend = 5
-    h = 0.005
+    h = 0.01
     xrange = np.arange(x0, xend, h)
     system = system_ode
     y0 = np.array([[1], [0]])
     sol = solution
 
-    number_of_methods = 4
+    number_of_methods = 5
 
     plt.subplot(2, number_of_methods, 1)
     plt.title("Метод Эйлера")
@@ -93,7 +105,7 @@ def main1():
     plt.plot(xrange, sol(xrange), ls='--', color='k', label='Аналитическое значение')
 
     plt.subplot(2, number_of_methods, 3)
-    plt.title("Метод Рунге-Кутта 4 порядка")
+    plt.title("Метод Рунге-Кутта\n4 порядка")
     plt.xlabel("x")
     plt.ylabel("u(x)")
     plt.grid()
@@ -101,7 +113,15 @@ def main1():
     plt.plot(xrange, sol(xrange), ls='--', color='k', label='Аналитическое значение')
 
     plt.subplot(2, number_of_methods, 4)
-    plt.title("Метод Адамса 4 порядка")
+    plt.title("Метод Адамса\n3 порядка")
+    plt.xlabel("x")
+    plt.ylabel("u(x)")
+    plt.grid()
+    plt.plot(xrange, adams3(system, x0, xend, h, y0)[0, :], color='k', label='Численное значение')
+    plt.plot(xrange, sol(xrange), ls='--', color='k', label='Аналитическое значение')
+
+    plt.subplot(2, number_of_methods, 5)
+    plt.title("Метод Адамса\n4 порядка")
     plt.xlabel("x")
     plt.ylabel("u(x)")
     plt.grid()
@@ -130,7 +150,14 @@ def main1():
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(adams4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+    plt.plot(xrange, abs(adams3(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+
+    plt.subplot(2, number_of_methods, number_of_methods + 5)
+    plt.xlabel("x")
+    plt.ylabel("|Δu|")
+    plt.grid()
+    plt.plot(xrange, abs(adams4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k',
+             label='Абсолютная погрешность')
 
     plt.show()
 
@@ -150,6 +177,7 @@ def main2():
     error[euler] = np.zeros(len(hrange))
     error[pred_corr] = np.zeros(len(hrange))
     error[runge_kutta4] = np.zeros(len(hrange))
+    error[adams3] = np.zeros(len(hrange))
     error[adams4] = np.zeros(len(hrange))
 
     for i, h in zip(range(len(hrange)), hrange):
@@ -177,3 +205,4 @@ def main2():
 
 if __name__ == '__main__':
     main1()
+    main2()
