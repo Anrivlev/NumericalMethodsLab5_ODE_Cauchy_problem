@@ -77,6 +77,13 @@ def adams4(system, a, b, h, y0):
     return result
 
 
+def runge_kutta4_correction(system, a, b, h, y0):
+    p = 4
+    result1 = runge_kutta4(system, a, b, h, y0)
+    result2 = runge_kutta4(system, a, b, h/2, y0)[:, ::2]
+    result = result2 + (result2 - result1) / (2**p - 1)
+    return result
+
 def main1():
     x0 = 0
     xend = 5
@@ -86,7 +93,7 @@ def main1():
     y0 = np.array([[1], [0]])
     sol = solution
 
-    number_of_methods = 5
+    number_of_methods = 6
 
     plt.subplot(2, number_of_methods, 1)
     plt.title("Метод Эйлера")
@@ -128,36 +135,49 @@ def main1():
     plt.plot(xrange, adams4(system, x0, xend, h, y0)[0, :], color='k', label='Численное значение')
     plt.plot(xrange, sol(xrange), ls='--', color='k', label='Аналитическое значение')
 
+    plt.subplot(2, number_of_methods, 6)
+    plt.title("Поправка Рунге для\nметода 4 порядка")
+    plt.xlabel("x")
+    plt.ylabel("u(x)")
+    plt.grid()
+    plt.plot(xrange, runge_kutta4_correction(system, x0, xend, h, y0)[0, :], color='k', label='Численное значение')
+    plt.plot(xrange, sol(xrange), ls='--', color='k', label='Аналитическое значение')
+
     plt.subplot(2, number_of_methods, number_of_methods + 1)
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(euler(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+    plt.plot(xrange, abs(euler(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
 
     plt.subplot(2, number_of_methods, number_of_methods + 2)
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(pred_corr(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+    plt.plot(xrange, abs(pred_corr(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
 
     plt.subplot(2, number_of_methods, number_of_methods + 3)
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(runge_kutta4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+    plt.plot(xrange, abs(runge_kutta4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
 
     plt.subplot(2, number_of_methods, number_of_methods + 4)
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(adams3(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k', label='Абсолютная погрешность')
+    plt.plot(xrange, abs(adams3(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
 
     plt.subplot(2, number_of_methods, number_of_methods + 5)
     plt.xlabel("x")
     plt.ylabel("|Δu|")
     plt.grid()
-    plt.plot(xrange, abs(adams4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k',
-             label='Абсолютная погрешность')
+    plt.plot(xrange, abs(adams4(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
+
+    plt.subplot(2, number_of_methods, number_of_methods + 6)
+    plt.xlabel("x")
+    plt.ylabel("|Δu|")
+    plt.grid()
+    plt.plot(xrange, abs(runge_kutta4_correction(system, x0, xend, h, y0)[0, :] - sol(xrange)), color='k')
 
     plt.show()
 
@@ -168,9 +188,9 @@ def main2():
     system = system_ode
     y0 = np.array([[1], [0]])
 
-    hmin = 0.001
-    hmax = 0.01
-    hstep = 0.0001
+    hmin = 0.01
+    hmax = 0.1
+    hstep = 0.001
     hrange = np.arange(hmin, hmax, hstep)
 
     error = dict()
@@ -179,6 +199,7 @@ def main2():
     error[runge_kutta4] = np.zeros(len(hrange))
     error[adams3] = np.zeros(len(hrange))
     error[adams4] = np.zeros(len(hrange))
+    error[runge_kutta4_correction] = np.zeros(len(hrange))
 
     for i, h in zip(range(len(hrange)), hrange):
         sol = solution(np.arange(x0, xend, h))
@@ -189,14 +210,14 @@ def main2():
     for key in error:
         error[key] = np.log(error[key])
 
+    plt.suptitle('Зависимость логарифма абсолютной погрешности от логарифма шага интегрирования')
     for key, i in zip(error, range(1, len(error) + 1)):
         plt.subplot(1, len(error), i)
         plt.title(key.__name__)
         plt.xlabel("log(h)")
         plt.ylabel("log(max(|Δu|))")
         plt.grid()
-        plt.plot(hrange, error[key], color='k', label='Абсолютная погрешность')
-        plt.legend()
+        plt.plot(hrange, error[key], color='k')
 
     for key in error:
         print(key.__name__, ": ", (error[key][-1] - error[key][0]) / (hrange[-1] - hrange[0]))
@@ -204,5 +225,4 @@ def main2():
 
 
 if __name__ == '__main__':
-    main1()
     main2()
