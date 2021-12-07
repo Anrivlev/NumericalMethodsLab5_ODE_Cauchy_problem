@@ -85,6 +85,21 @@ def runge_kutta4_correction(system, a, b, h, y0):
     return result
 
 
+def least_squares(x, y):
+    n = len(x)
+
+    sumx = x.sum()
+    sumy = y.sum()
+    xy = x * y
+    sumxy = xy.sum()
+    xx = x * x
+    sumxx = xx.sum()
+
+    b = (n * sumxy - sumx*sumy) / (n * sumxx - sumx**2)
+    a = (sumy - b * sumx) / n
+    return a, b
+
+
 def main1():
     x0 = 0
     xend = 5
@@ -207,9 +222,9 @@ def main2():
         for key in error:
             error[key][i] = np.max(np.abs(key(system, x0, xend, h, y0)[0, :] - sol))
 
-    hrange = np.log(hrange)
+    hrange = np.log10(hrange)
     for key in error:
-        error[key] = np.log(error[key])
+        error[key] = np.log10(error[key])
 
     plt.suptitle('Зависимость логарифма абсолютной погрешности от логарифма шага интегрирования')
     for key, i in zip(error, range(1, len(error) + 1)):
@@ -221,7 +236,8 @@ def main2():
         plt.plot(hrange, error[key], color='k')
 
     for key in error:
-        print(key.__name__, ": ", (error[key][-1] - error[key][0]) / (hrange[-1] - hrange[0]))
+        coeffs = least_squares(hrange, error[key])
+        print(key.__name__, ": ", coeffs[0], " + ", coeffs[1], "x", sep="")
     plt.show()
 
 
